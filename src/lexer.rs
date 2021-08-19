@@ -141,7 +141,11 @@ impl<'a> Lexer<'a> {
                     self.pos.ln = 0;
                     self.next()
                 }
-                _ => Some(Ok(Token::EOF)),
+                _ => Some(Err(Error::new(
+                    format!("Unknown character '{}'", char),
+                    char,
+                    self.pos,
+                ))),
             }
         }
     }
@@ -166,7 +170,7 @@ impl<'a> Lexer<'a> {
                 if char == '.' {
                     if float {
                         return Some(Err(Error::new(
-                            format!("Invalid character {}", char),
+                            format!("Invalid character '{}'", char),
                             char,
                             self.pos,
                         )));

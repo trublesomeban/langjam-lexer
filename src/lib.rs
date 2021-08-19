@@ -44,7 +44,7 @@ fn lex_braces() -> Result<(), lexer::Error> {
         Token::Sep(Separator::Comma),
         Token::Lit(Literal::Int, "2".to_string()),
         Token::Brace(BraceType::Bracket, BraceSide::Right),
-	Token::EOF
+        Token::EOF,
     ];
     assert_eq!(result, expected);
     Ok(())
@@ -158,13 +158,22 @@ fn lex_proc() -> Result<(), lexer::Error> {
     Ok(())
 }
 
-// So the lexer can lex pretty much anything now
-// ```rust
-// proc sum(arr: []i32)  -> i32 {
-//         let res: i32
-//         for el in arr {
-//             res += el
-//         }
-//                 ret res
-//     }
-// ```
+#[test]
+fn invalid_char_error() {
+    let mut iter = TokenStream::new("3.14.", vec![], vec![]);
+    match iter.next().unwrap() {
+	    Err(_) => {}
+	    Ok(_) => panic!("Error did not happen")
+    }
+}
+
+#[test]
+fn unknown_char_error() {
+    let mut iter = TokenStream::new("$", vec![], vec![]);
+    match iter.next().unwrap() {
+	    Err(_) => {}
+	    Ok(_) => panic!("Error did not happen")
+    }
+}
+
+// I totally did not use the bottom of this file as a clipboard previously
