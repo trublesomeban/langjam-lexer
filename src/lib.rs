@@ -1,4 +1,7 @@
 mod lexer;
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    #[test]
+    fn char_testing() {}
+}
