@@ -1,27 +1,46 @@
 #![allow(unused)]
 
-use std::str::Chars;
+use std::{iter::Peekable, str::Chars, vec};
 
-enum Brace {
-    Paren,
-    Square,
-    Curly,
-    Angle,
+#[derive(Debug, PartialEq)]
+pub enum Identifier {
+    Reserved,
+    Normal,
 }
 
-enum Literal {
+#[derive(Debug, PartialEq)]
+pub enum BraceSide {
+    Left,
+    Right,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum BraceType {
+    Paren,
+    Bracket,
+    Curly,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Separator {
+    Comma,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Literal {
     Int,
     Float,
     Str,
 }
 
-enum Token {
+#[derive(Debug, PartialEq)]
+pub enum Token {
     EOF,
     Sym(String),
     Lit(Literal, String),
-    Keyword(String),
-    Identifier(String),
-    List(Brace, Vec<Token>),
+    Ident(Identifier, String),
+    Brace(BraceType, BraceSide),
+    Sep(Separator),
 }
 
 struct Position {
@@ -31,14 +50,30 @@ struct Position {
 }
 
 struct Lexer<'a> {
-    ch: Chars<'a>,
+    reserved: Vec<&'a str>,
+    symbols: Vec<&'a str>,
+    iter: Peekable<Chars<'a>>,
     pos: Position,
-    next: Token,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn next(&mut self) -> Option<Result<Token, ()>> {
-        if let Some(char) = self.ch.next() {
+    fn new(chars: Peekable<Chars<'a>>, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
+        Self {
+            iter: chars,
+            reserved,
+            symbols,
+            pos: Position {
+                col: -1,
+                ln: 0,
+                idx: 0,
+            },
+        }
+    }
+
+    fn next(&mut self) -> Option<Result<Token, ()>> {
+        if let Some(char) = self.iter.next() {
+            self.pos.idx += 1;
+            self.pos.col += 1;
             self.lex(char)
         } else {
             None
@@ -47,41 +82,149 @@ impl<'a> Lexer<'a> {
 
     fn lex(&mut self, char: char) -> Option<Result<Token, ()>> {
         if " \t".contains(char) {
-            let char = match self.ch.next() {
-                Some(char) => char,
-                None => return None,
-            };
-            self.lex(char)
-        } else if char.is_alphabetic() {
-            self.ident()
+            self.next()
+        } else if self.symbols.contains(&char.to_string().as_str()) {
+            self.symbol(char)
+        } else if char.is_alphabetic() || "#_".contains(char) {
+            self.ident(char)
         } else if char.is_numeric() {
-            self.lit()
+            self.num(char)
         } else {
-            Some(Ok(Token::EOF))
-        }
-    }
-
-    fn lit(&mut self) -> Option<Result<Token, ()>> {
-        let mut lit = String::new();
-        while let Some(char) = self.ch.next() {
-            if char.is_numeric() {
-                lit.push(char)
-            } else {
-                break;
+            match char {
+                '(' => Some(Ok(Token::Brace(BraceType::Paren, BraceSide::Left))),
+                ')' => Some(Ok(Token::Brace(BraceType::Paren, BraceSide::Right))),
+                '[' => Some(Ok(Token::Brace(BraceType::Bracket, BraceSide::Left))),
+                ']' => Some(Ok(Token::Brace(BraceType::Bracket, BraceSide::Right))),
+                '{' => Some(Ok(Token::Brace(BraceType::Curly, BraceSide::Left))),
+                '}' => Some(Ok(Token::Brace(BraceType::Curly, BraceSide::Right))),
+                ',' => Some(Ok(Token::Sep(Separator::Comma))),
+                '"' => self.str(char),
+                '\n' => {
+                    self.pos.col += 1;
+                    self.pos.ln = 0;
+                    self.next()
+                }
+                _ => Some(Ok(Token::EOF)),
             }
         }
-        Some(Ok(Token::EOF))
     }
 
-    fn ident(&mut self) -> Option<Result<Token, ()>> {
+    fn num(&mut self, char: char) -> Option<Result<Token, ()>> {
+        let mut num = String::new();
+        let mut float = false;
+        num.push(char);
+        while match self.iter.peek() {
+            Some(char) => {
+                if char.is_numeric() || *char == '.' {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        } {
+            if let Some(char) = self.iter.next() {
+                self.pos.idx += 1;
+                self.pos.col += 1;
+                if char == '.' {
+                    if float {
+                        return Some(Err(()));
+                    }
+                    num.push(char);
+                    float = true
+                } else {
+                    num.push(char)
+                }
+            }
+        }
+
+        Some(Ok(Token::Lit(
+            if float { Literal::Float } else { Literal::Int },
+            num,
+        )))
+    }
+
+    fn str(&mut self, char: char) -> Option<Result<Token, ()>> {
+        let mut str = String::new();
+        while let Some(char) = self.iter.next() {
+            self.pos.idx += 1;
+            self.pos.col += 1;
+            if char == '"' {
+                break;
+            }
+            str.push(char)
+        }
+        Some(Ok(Token::Lit(Literal::Str, str)))
+    }
+
+    fn ident(&mut self, char: char) -> Option<Result<Token, ()>> {
         let mut ident = String::new();
-        while let Some(char) = self.ch.next() {
-            if char.is_alphabetic() {
+        ident.push(char);
+        while match self.iter.peek() {
+            Some(char) => {
+                if char.is_alphanumeric() || "#_".contains(char.to_string().as_str()) {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        } {
+            if let Some(char) = self.iter.next() {
+                self.pos.idx += 1;
+                self.pos.col += 1;
                 ident.push(char)
-            } else {
-                break;
             }
         }
-        Some(Ok(Token::EOF))
+        Some(Ok(Token::Ident(
+            if self.reserved.contains(&ident.as_str()) {
+                Identifier::Reserved
+            } else {
+                Identifier::Normal
+            },
+            ident,
+        )))
+    }
+
+    fn symbol(&mut self, char: char) -> Option<Result<Token, ()>> {
+        let mut sym = String::new();
+        let mut multi = false;
+        sym.push(char);
+        for sy in self.symbols.to_owned() {
+            if sy.len() > 1 {
+                if let Some(char) = self.iter.peek() {
+                    if sy.chars().collect::<Vec<char>>()[1] == *char {
+                        multi = true;
+                        sym.push(*char);
+                        break;
+                    }
+                }
+            }
+        }
+        if multi {
+            self.iter.next();
+            self.pos.idx += 1;
+            self.pos.col += 1;
+        }
+        Some(Ok(Token::Sym(sym)))
+    }
+}
+
+pub struct TokenStream<'a> {
+    lexer: Lexer<'a>,
+}
+
+impl<'a> TokenStream<'a> {
+    pub fn new(s: &'a str, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
+        Self {
+            lexer: Lexer::new(s.chars().peekable(), reserved, symbols),
+        }
+    }
+}
+
+impl<'a> Iterator for TokenStream<'a> {
+    type Item = Result<Token, ()>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.lexer.next()
     }
 }
