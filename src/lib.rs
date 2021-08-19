@@ -162,7 +162,9 @@ fn lex_proc() -> Result<(), lexer::Error> {
 fn invalid_char_error() {
     let mut iter = TokenStream::new("3.14.", vec![], vec![]);
     match iter.next().unwrap() {
-        Err(_) => {}
+        Err(e) => {
+            println!("{}", e.fmt());
+        }
         Ok(_) => panic!("Error did not happen"),
     }
 }
@@ -171,7 +173,9 @@ fn invalid_char_error() {
 fn unknown_char_error() {
     let mut iter = TokenStream::new("$", vec![], vec![]);
     match iter.next().unwrap() {
-        Err(_) => {}
+        Err(e) => {
+            println!("{}", e.fmt());
+        }
         Ok(_) => panic!("Error did not happen"),
     }
 }

@@ -1,6 +1,4 @@
-#![allow(unused)]
-
-use std::{iter::Chain, iter::Peekable, str::Chars, vec};
+use std::{iter::Chain, iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq)]
 pub enum Identifier {
@@ -58,7 +56,8 @@ impl Error {
             pos,
         }
     }
-    fn fmt(&self) -> String {
+    #[allow(unused)] // my linter does not recognize that this is being used in the other file because of the #[cfg(test)]
+    pub fn fmt(&self) -> String {
         format!(
             "{} at line {}, column {}",
             self.reason, self.pos.ln, self.pos.col
@@ -107,8 +106,7 @@ impl<'a> Lexer<'a> {
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
         if let Some(char) = self.iter.next() {
-            self.pos.idx += 1;
-            self.pos.col += 1;
+            self.pos.advance();
             self.lex(char)
         } else {
             None
@@ -137,8 +135,7 @@ impl<'a> Lexer<'a> {
                 ',' => Some(Ok(Token::Sep(Separator::Comma))),
                 '"' => self.str(char),
                 '\n' => {
-                    self.pos.col += 1;
-                    self.pos.ln = 0;
+                    self.pos.newline();
                     self.next()
                 }
                 _ => Some(Err(Error::new(
@@ -165,8 +162,7 @@ impl<'a> Lexer<'a> {
             _ => false,
         } {
             if let Some(char) = self.iter.next() {
-                self.pos.idx += 1;
-                self.pos.col += 1;
+                self.pos.advance();
                 if char == '.' {
                     if float {
                         return Some(Err(Error::new(
@@ -190,7 +186,7 @@ impl<'a> Lexer<'a> {
         })))
     }
 
-    fn str(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn str(&mut self, _: char) -> Option<Result<Token, Error>> {
         let mut str = String::new();
         while let Some(char) = self.iter.next() {
             self.pos.idx += 1;
@@ -260,6 +256,7 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
+    #[allow(unused)] // my linter does not recognize that this is being used in the other file because of the #[cfg(test)]
     pub fn new(s: &'a str, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
         Self {
             lexer: Lexer::new(s.chars(), reserved, symbols),
