@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use std::{iter::Peekable, str::Chars, vec};
+use std::{iter::Chain, iter::Peekable, str::Chars, vec};
 
 #[derive(Debug, PartialEq)]
 pub enum Identifier {
@@ -43,23 +43,58 @@ pub enum Token {
     Sep(Separator),
 }
 
+#[derive(Debug)]
+pub struct Error {
+    reason: String,
+    details: char,
+    pos: Position,
+}
+
+impl Error {
+    fn new(reason: String, details: char, pos: Position) -> Self {
+        Self {
+            reason,
+            details,
+            pos,
+        }
+    }
+    fn fmt(&self) -> String {
+        format!(
+            "{} at line {}, column {}",
+            self.reason, self.pos.ln, self.pos.col
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 struct Position {
     col: isize,
     ln: isize,
     idx: isize,
 }
 
+impl Position {
+    fn newline(&mut self) {
+        self.col = 0;
+        self.ln += 1
+    }
+    fn advance(&mut self) {
+        self.col += 1;
+        self.idx += 1;
+    }
+}
+
 struct Lexer<'a> {
     reserved: Vec<&'a str>,
     symbols: Vec<&'a str>,
-    iter: Peekable<Chars<'a>>,
+    iter: Peekable<Chain<Chars<'a>, Chars<'a>>>,
     pos: Position,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(chars: Peekable<Chars<'a>>, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
+    fn new(chars: Chars<'a>, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
         Self {
-            iter: chars,
+            iter: chars.chain("\n".chars()).peekable(),
             reserved,
             symbols,
             pos: Position {
@@ -70,7 +105,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn next(&mut self) -> Option<Result<Token, ()>> {
+    fn next(&mut self) -> Option<Result<Token, Error>> {
         if let Some(char) = self.iter.next() {
             self.pos.idx += 1;
             self.pos.col += 1;
@@ -80,8 +115,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex(&mut self, char: char) -> Option<Result<Token, ()>> {
-        if " \t".contains(char) {
+    fn lex(&mut self, char: char) -> Option<Result<Token, Error>> {
+        if self.iter.peek().is_none() {
+            Some(Ok(Token::EOF))
+        } else if " \t".contains(char) {
             self.next()
         } else if self.symbols.contains(&char.to_string().as_str()) {
             self.symbol(char)
@@ -109,7 +146,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn num(&mut self, char: char) -> Option<Result<Token, ()>> {
+    fn num(&mut self, char: char) -> Option<Result<Token, Error>> {
         let mut num = String::new();
         let mut float = false;
         num.push(char);
@@ -128,7 +165,11 @@ impl<'a> Lexer<'a> {
                 self.pos.col += 1;
                 if char == '.' {
                     if float {
-                        return Some(Err(()));
+                        return Some(Err(Error::new(
+                            format!("Invalid character {}", char),
+                            char,
+                            self.pos,
+                        )));
                     }
                     num.push(char);
                     float = true
@@ -144,7 +185,7 @@ impl<'a> Lexer<'a> {
         )))
     }
 
-    fn str(&mut self, char: char) -> Option<Result<Token, ()>> {
+    fn str(&mut self, char: char) -> Option<Result<Token, Error>> {
         let mut str = String::new();
         while let Some(char) = self.iter.next() {
             self.pos.idx += 1;
@@ -157,7 +198,7 @@ impl<'a> Lexer<'a> {
         Some(Ok(Token::Lit(Literal::Str, str)))
     }
 
-    fn ident(&mut self, char: char) -> Option<Result<Token, ()>> {
+    fn ident(&mut self, char: char) -> Option<Result<Token, Error>> {
         let mut ident = String::new();
         ident.push(char);
         while match self.iter.peek() {
@@ -186,7 +227,7 @@ impl<'a> Lexer<'a> {
         )))
     }
 
-    fn symbol(&mut self, char: char) -> Option<Result<Token, ()>> {
+    fn symbol(&mut self, char: char) -> Option<Result<Token, Error>> {
         let mut sym = String::new();
         let mut multi = false;
         sym.push(char);
@@ -217,13 +258,13 @@ pub struct TokenStream<'a> {
 impl<'a> TokenStream<'a> {
     pub fn new(s: &'a str, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
         Self {
-            lexer: Lexer::new(s.chars().peekable(), reserved, symbols),
+            lexer: Lexer::new(s.chars(), reserved, symbols),
         }
     }
 }
 
 impl<'a> Iterator for TokenStream<'a> {
-    type Item = Result<Token, ()>;
+    type Item = Result<Token, Error>;
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next()
     }
