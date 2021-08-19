@@ -4,8 +4,8 @@ use std::{iter::Chain, iter::Peekable, str::Chars, vec};
 
 #[derive(Debug, PartialEq)]
 pub enum Identifier {
-    Reserved,
-    Normal,
+    Reserved(String),
+    Normal(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -16,9 +16,9 @@ pub enum BraceSide {
 
 #[derive(Debug, PartialEq)]
 pub enum BraceType {
-    Paren,
-    Bracket,
-    Curly,
+    Paren(BraceSide),
+    Bracket(BraceSide),
+    Curly(BraceSide),
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,8 +28,8 @@ pub enum Separator {
 
 #[derive(Debug, PartialEq)]
 pub enum Literal {
-    Int(i32),
-    Float(f32),
+    Int(String),
+    Float(String),
     Str(String),
 }
 
@@ -38,8 +38,8 @@ pub enum Token {
     EOF,
     Sym(String),
     Lit(Literal),
-    Ident(Identifier, String),
-    Brace(BraceType, BraceSide),
+    Ident(Identifier),
+    Brace(BraceType),
     Sep(Separator),
 }
 
@@ -128,12 +128,12 @@ impl<'a> Lexer<'a> {
             self.num(char)
         } else {
             match char {
-                '(' => Some(Ok(Token::Brace(BraceType::Paren, BraceSide::Left))),
-                ')' => Some(Ok(Token::Brace(BraceType::Paren, BraceSide::Right))),
-                '[' => Some(Ok(Token::Brace(BraceType::Bracket, BraceSide::Left))),
-                ']' => Some(Ok(Token::Brace(BraceType::Bracket, BraceSide::Right))),
-                '{' => Some(Ok(Token::Brace(BraceType::Curly, BraceSide::Left))),
-                '}' => Some(Ok(Token::Brace(BraceType::Curly, BraceSide::Right))),
+                '(' => Some(Ok(Token::Brace(BraceType::Paren(BraceSide::Left)))),
+                ')' => Some(Ok(Token::Brace(BraceType::Paren(BraceSide::Right)))),
+                '[' => Some(Ok(Token::Brace(BraceType::Bracket(BraceSide::Left)))),
+                ']' => Some(Ok(Token::Brace(BraceType::Bracket(BraceSide::Right)))),
+                '{' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Left)))),
+                '}' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Right)))),
                 ',' => Some(Ok(Token::Sep(Separator::Comma))),
                 '"' => self.str(char),
                 '\n' => {
@@ -184,9 +184,9 @@ impl<'a> Lexer<'a> {
         }
 
         Some(Ok(Token::Lit(if float {
-            Literal::Float(num.parse().unwrap())
+            Literal::Float(num)
         } else {
-            Literal::Int(num.parse().unwrap())
+            Literal::Int(num)
         })))
     }
 
@@ -224,11 +224,10 @@ impl<'a> Lexer<'a> {
         }
         Some(Ok(Token::Ident(
             if self.reserved.contains(&ident.as_str()) {
-                Identifier::Reserved
+                Identifier::Reserved(ident)
             } else {
-                Identifier::Normal
+                Identifier::Normal(ident)
             },
-            ident,
         )))
     }
 

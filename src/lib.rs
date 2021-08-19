@@ -7,14 +7,14 @@ use lexer::*;
 fn lex_int() {
     let mut iter = TokenStream::new("3", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Lit(Literal::Int(3)));
+    assert_eq!(token, Token::Lit(Literal::Int("3".to_string())));
 }
 
 #[test]
 fn lex_float() {
     let mut iter = TokenStream::new("3.14", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Lit(Literal::Float(3.14)));
+    assert_eq!(token, Token::Lit(Literal::Float("3.14".to_string())));
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn lex_string() {
 fn lex_ident() {
     let mut iter = TokenStream::new("hello", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Ident(Identifier::Normal, "hello".to_string()));
+    assert_eq!(token, Token::Ident(Identifier::Normal("hello".to_string())));
 }
 
 #[test]
@@ -39,11 +39,11 @@ fn lex_braces() -> Result<(), lexer::Error> {
         result.push(token?);
     }
     let expected = vec![
-        Token::Brace(BraceType::Bracket, BraceSide::Left),
-        Token::Lit(Literal::Int(1)),
+        Token::Brace(BraceType::Bracket(BraceSide::Left)),
+        Token::Lit(Literal::Int("1".to_string())),
         Token::Sep(Separator::Comma),
-        Token::Lit(Literal::Int(2)),
-        Token::Brace(BraceType::Bracket, BraceSide::Right),
+        Token::Lit(Literal::Int("2".to_string())),
+        Token::Brace(BraceType::Bracket(BraceSide::Right)),
         Token::EOF,
     ];
     assert_eq!(result, expected);
@@ -58,14 +58,14 @@ fn lex_multi() -> Result<(), lexer::Error> {
         result.push(token?);
     }
     let expected = vec![
-        Token::Ident(Identifier::Reserved, "let".to_string()),
-        Token::Ident(Identifier::Normal, "x".to_string()),
+        Token::Ident(Identifier::Reserved("let".to_string())),
+        Token::Ident(Identifier::Normal("x".to_string())),
         Token::Sym("=".to_string()),
-        Token::Brace(BraceType::Paren, BraceSide::Left),
-        Token::Lit(Literal::Float(3.14)),
+        Token::Brace(BraceType::Paren(BraceSide::Left)),
+        Token::Lit(Literal::Float("3.14".to_string())),
         Token::Sep(Separator::Comma),
-        Token::Lit(Literal::Float(0.86)),
-        Token::Brace(BraceType::Paren, BraceSide::Right),
+        Token::Lit(Literal::Float("0.86".to_string())),
+        Token::Brace(BraceType::Paren(BraceSide::Right)),
         Token::EOF,
     ];
     assert_eq!(result, expected);
@@ -85,21 +85,21 @@ fn lex_fn() -> Result<(), lexer::Error> {
         result.push(token?);
     }
     let expected = vec![
-        Token::Ident(Identifier::Reserved, "fn".to_string()),
-        Token::Ident(Identifier::Normal, "sum".to_string()),
-        Token::Brace(BraceType::Paren, BraceSide::Left),
-        Token::Ident(Identifier::Normal, "x".to_string()),
+        Token::Ident(Identifier::Reserved("fn".to_string())),
+        Token::Ident(Identifier::Normal("sum".to_string())),
+        Token::Brace(BraceType::Paren(BraceSide::Left)),
+        Token::Ident(Identifier::Normal("x".to_string())),
         Token::Sym(":".to_string()),
-        Token::Ident(Identifier::Normal, "i32".to_string()),
+        Token::Ident(Identifier::Normal("i32".to_string())),
         Token::Sep(Separator::Comma),
-        Token::Ident(Identifier::Normal, "y".to_string()),
+        Token::Ident(Identifier::Normal("y".to_string())),
         Token::Sym(":".to_string()),
-        Token::Ident(Identifier::Normal, "i32".to_string()),
-        Token::Brace(BraceType::Paren, BraceSide::Right),
+        Token::Ident(Identifier::Normal("i32".to_string())),
+        Token::Brace(BraceType::Paren(BraceSide::Right)),
         Token::Sym("=".to_string()),
-        Token::Ident(Identifier::Normal, "x".to_string()),
+        Token::Ident(Identifier::Normal("x".to_string())),
         Token::Sym("+".to_string()),
-        Token::Ident(Identifier::Normal, "y".to_string()),
+        Token::Ident(Identifier::Normal("y".to_string())),
         Token::EOF,
     ];
     assert_eq!(result, expected);
@@ -124,34 +124,34 @@ fn lex_proc() -> Result<(), lexer::Error> {
         result.push(token?);
     }
     let expected = vec![
-        Token::Ident(Identifier::Reserved, "proc".to_string()),
-        Token::Ident(Identifier::Normal, "sum".to_string()),
-        Token::Brace(BraceType::Paren, BraceSide::Left),
-        Token::Ident(Identifier::Normal, "arr".to_string()),
+        Token::Ident(Identifier::Reserved("proc".to_string())),
+        Token::Ident(Identifier::Normal("sum".to_string())),
+        Token::Brace(BraceType::Paren(BraceSide::Left)),
+        Token::Ident(Identifier::Normal("arr".to_string())),
         Token::Sym(":".to_string()),
-        Token::Brace(BraceType::Bracket, BraceSide::Left),
-        Token::Brace(BraceType::Bracket, BraceSide::Right),
-        Token::Ident(Identifier::Normal, "i32".to_string()),
-        Token::Brace(BraceType::Paren, BraceSide::Right),
+        Token::Brace(BraceType::Bracket(BraceSide::Left)),
+        Token::Brace(BraceType::Bracket(BraceSide::Right)),
+        Token::Ident(Identifier::Normal("i32".to_string())),
+        Token::Brace(BraceType::Paren(BraceSide::Right)),
         Token::Sym("->".to_string()),
-        Token::Ident(Identifier::Normal, "i32".to_string()),
-        Token::Brace(BraceType::Curly, BraceSide::Left),
-        Token::Ident(Identifier::Reserved, "let".to_string()),
-        Token::Ident(Identifier::Normal, "res".to_string()),
+        Token::Ident(Identifier::Normal("i32".to_string())),
+        Token::Brace(BraceType::Curly(BraceSide::Left)),
+        Token::Ident(Identifier::Reserved("let".to_string())),
+        Token::Ident(Identifier::Normal("res".to_string())),
         Token::Sym(":".to_string()),
-        Token::Ident(Identifier::Normal, "i32".to_string()),
-        Token::Ident(Identifier::Reserved, "for".to_string()),
-        Token::Ident(Identifier::Normal, "el".to_string()),
-        Token::Ident(Identifier::Reserved, "in".to_string()),
-        Token::Ident(Identifier::Normal, "arr".to_string()),
-        Token::Brace(BraceType::Curly, BraceSide::Left),
-        Token::Ident(Identifier::Normal, "res".to_string()),
+        Token::Ident(Identifier::Normal("i32".to_string())),
+        Token::Ident(Identifier::Reserved("for".to_string())),
+        Token::Ident(Identifier::Normal("el".to_string())),
+        Token::Ident(Identifier::Reserved("in".to_string())),
+        Token::Ident(Identifier::Normal("arr".to_string())),
+        Token::Brace(BraceType::Curly(BraceSide::Left)),
+        Token::Ident(Identifier::Normal("res".to_string())),
         Token::Sym("+=".to_string()),
-        Token::Ident(Identifier::Normal, "el".to_string()),
-        Token::Brace(BraceType::Curly, BraceSide::Right),
-        Token::Ident(Identifier::Reserved, "ret".to_string()),
-        Token::Ident(Identifier::Normal, "res".to_string()),
-        Token::Brace(BraceType::Curly, BraceSide::Right),
+        Token::Ident(Identifier::Normal("el".to_string())),
+        Token::Brace(BraceType::Curly(BraceSide::Right)),
+        Token::Ident(Identifier::Reserved("ret".to_string())),
+        Token::Ident(Identifier::Normal("res".to_string())),
+        Token::Brace(BraceType::Curly(BraceSide::Right)),
         Token::EOF,
     ];
     assert_eq!(result, expected);
