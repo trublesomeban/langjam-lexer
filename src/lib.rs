@@ -5,40 +5,40 @@ use lexer::*;
 
 #[test]
 fn lex_int() {
-    let mut iter = TokenStream::new("3", vec![], vec![]);
+    let mut iter = TokenStream::new("3", &[], &[]);
     let token = iter.next().unwrap().unwrap();
     assert_eq!(token, Token::Lit(Literal::Int("3".to_string())));
 }
 
 #[test]
 fn lex_float() {
-    let mut iter = TokenStream::new("3.14", vec![], vec![]);
+    let mut iter = TokenStream::new("3.14", &[], &[]);
     let token = iter.next().unwrap().unwrap();
     assert_eq!(token, Token::Lit(Literal::Float("3.14".to_string())));
 }
 
 #[test]
 fn lex_string() {
-    let mut iter = TokenStream::new("\"hello!\"", vec![], vec![]);
+    let mut iter = TokenStream::new("\"hello!\"", &[], &[]);
     let token = iter.next().unwrap().unwrap();
     assert_eq!(token, Token::Lit(Literal::Str("hello!".to_string())));
 }
 
 #[test]
 fn lex_ident() {
-    let mut iter = TokenStream::new("hello", vec![], vec![]);
+    let mut iter = TokenStream::new("hello", &[], &[]);
     let token = iter.next().unwrap().unwrap();
     assert_eq!(token, Token::Ident(Identifier::Normal("hello".to_string())));
 }
 
 #[test]
 fn lex_braces() -> Result<(), lexer::Error> {
-    let iter = TokenStream::new("[1, 2]", vec![], vec![]);
+    let iter = TokenStream::new("[1, 2]", &[], &[]);
     let mut result: Vec<Token> = vec![];
     for token in iter {
         result.push(token?);
     }
-    let expected = vec![
+    let expected = &[
         Token::Brace(BraceType::Bracket(BraceSide::Left)),
         Token::Lit(Literal::Int("1".to_string())),
         Token::Sep(Separator::Comma),
@@ -52,12 +52,12 @@ fn lex_braces() -> Result<(), lexer::Error> {
 
 #[test]
 fn lex_multi() -> Result<(), lexer::Error> {
-    let iter = TokenStream::new("let x = (3.14, 0.86)", vec!["let"], vec!["="]);
+    let iter = TokenStream::new("let x = (3.14, 0.86)", &["let"], &["="]);
     let mut result: Vec<Token> = vec![];
     for token in iter {
         result.push(token?);
     }
-    let expected = vec![
+    let expected = &[
         Token::Ident(Identifier::Reserved("let".to_string())),
         Token::Ident(Identifier::Normal("x".to_string())),
         Token::Sym("=".to_string()),
@@ -77,14 +77,14 @@ fn lex_fn() -> Result<(), lexer::Error> {
     let iter = TokenStream::new(
         "fn sum(x: i32, y: i32) = 
 		x + y",
-        vec!["fn"],
-        vec!["+", "=", ":"],
+        &["fn"],
+        &["+", "=", ":"],
     );
     let mut result: Vec<Token> = vec![];
     for token in iter {
         result.push(token?);
     }
-    let expected = vec![
+    let expected = &[
         Token::Ident(Identifier::Reserved("fn".to_string())),
         Token::Ident(Identifier::Normal("sum".to_string())),
         Token::Brace(BraceType::Paren(BraceSide::Left)),
@@ -116,14 +116,14 @@ fn lex_proc() -> Result<(), lexer::Error> {
 		}
                 ret res
 	}",
-        vec!["proc", "let", "for", "in", "ret"],
-        vec!["-", "+", ":", "->", "+="],
+        &["proc", "let", "for", "in", "ret"],
+        &["-", "+", ":", "->", "+="],
     );
     let mut result: Vec<Token> = vec![];
     for token in iter {
         result.push(token?);
     }
-    let expected = vec![
+    let expected = &[
         Token::Ident(Identifier::Reserved("proc".to_string())),
         Token::Ident(Identifier::Normal("sum".to_string())),
         Token::Brace(BraceType::Paren(BraceSide::Left)),
@@ -160,10 +160,10 @@ fn lex_proc() -> Result<(), lexer::Error> {
 
 #[test]
 fn invalid_char_error() {
-    let mut iter = TokenStream::new("3.14.", vec![], vec![]);
+    let mut iter = TokenStream::new("3.14.", &[], &[]);
     match iter.next().unwrap() {
-        Err(e) => {
-            println!("{}", e.fmt());
+        Err(_e) => {
+            //     eprintln!("{}", _e.fmt());
         }
         Ok(_) => panic!("Error did not happen"),
     }
@@ -171,10 +171,10 @@ fn invalid_char_error() {
 
 #[test]
 fn unknown_char_error() {
-    let mut iter = TokenStream::new("$", vec![], vec![]);
+    let mut iter = TokenStream::new("$", &[], &[]);
     match iter.next().unwrap() {
-        Err(e) => {
-            println!("{}", e.fmt());
+        Err(_e) => {
+            //     eprintln!("{}", _e.fmt());
         }
         Ok(_) => panic!("Error did not happen"),
     }

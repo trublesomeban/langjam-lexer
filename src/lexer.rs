@@ -84,21 +84,21 @@ impl Position {
 }
 
 struct Lexer<'a> {
-    reserved: Vec<&'a str>,
-    symbols: Vec<&'a str>,
+    reserved: &'a[&'a str],
+    symbols: &'a[&'a str],
     iter: Peekable<Chain<Chars<'a>, Chars<'a>>>,
     pos: Position,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(chars: Chars<'a>, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
+    fn new(chars: Chars<'a>, reserved: &'a[&'a str], symbols: &'a[&'a str]) -> Self {
         Self {
             iter: chars.chain("\n".chars()).peekable(),
             reserved,
             symbols,
             pos: Position {
-                col: -1,
-                ln: 0,
+                col: 0,
+                ln: 1,
                 idx: 0,
             },
         }
@@ -257,7 +257,7 @@ pub struct TokenStream<'a> {
 
 impl<'a> TokenStream<'a> {
     #[allow(unused)] // my linter does not recognize that this is being used in the other file because of the #[cfg(test)]
-    pub fn new(s: &'a str, reserved: Vec<&'a str>, symbols: Vec<&'a str>) -> Self {
+    pub fn new(s: &'a str, reserved: &'a[&'a str], symbols: &'a[&'a str]) -> Self {
         Self {
             lexer: Lexer::new(s.chars(), reserved, symbols),
         }
