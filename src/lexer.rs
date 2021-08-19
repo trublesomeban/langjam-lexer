@@ -28,16 +28,16 @@ pub enum Separator {
 
 #[derive(Debug, PartialEq)]
 pub enum Literal {
-    Int,
-    Float,
-    Str,
+    Int(i32),
+    Float(f32),
+    Str(String),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
     EOF,
     Sym(String),
-    Lit(Literal, String),
+    Lit(Literal),
     Ident(Identifier, String),
     Brace(BraceType, BraceSide),
     Sep(Separator),
@@ -183,10 +183,11 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Some(Ok(Token::Lit(
-            if float { Literal::Float } else { Literal::Int },
-            num,
-        )))
+        Some(Ok(Token::Lit(if float {
+            Literal::Float(num.parse().unwrap())
+        } else {
+            Literal::Int(num.parse().unwrap())
+        })))
     }
 
     fn str(&mut self, char: char) -> Option<Result<Token, Error>> {
@@ -199,7 +200,7 @@ impl<'a> Lexer<'a> {
             }
             str.push(char)
         }
-        Some(Ok(Token::Lit(Literal::Str, str)))
+        Some(Ok(Token::Lit(Literal::Str(str))))
     }
 
     fn ident(&mut self, char: char) -> Option<Result<Token, Error>> {

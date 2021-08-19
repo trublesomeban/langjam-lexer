@@ -7,21 +7,21 @@ use lexer::*;
 fn lex_int() {
     let mut iter = TokenStream::new("3", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Lit(Literal::Int, "3".to_string()));
+    assert_eq!(token, Token::Lit(Literal::Int(3)));
 }
 
 #[test]
 fn lex_float() {
     let mut iter = TokenStream::new("3.14", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Lit(Literal::Float, "3.14".to_string()));
+    assert_eq!(token, Token::Lit(Literal::Float(3.14)));
 }
 
 #[test]
 fn lex_string() {
     let mut iter = TokenStream::new("\"hello!\"", vec![], vec![]);
     let token = iter.next().unwrap().unwrap();
-    assert_eq!(token, Token::Lit(Literal::Str, "hello!".to_string()));
+    assert_eq!(token, Token::Lit(Literal::Str("hello!".to_string())));
 }
 
 #[test]
@@ -40,9 +40,9 @@ fn lex_braces() -> Result<(), lexer::Error> {
     }
     let expected = vec![
         Token::Brace(BraceType::Bracket, BraceSide::Left),
-        Token::Lit(Literal::Int, "1".to_string()),
+        Token::Lit(Literal::Int(1)),
         Token::Sep(Separator::Comma),
-        Token::Lit(Literal::Int, "2".to_string()),
+        Token::Lit(Literal::Int(2)),
         Token::Brace(BraceType::Bracket, BraceSide::Right),
         Token::EOF,
     ];
@@ -62,9 +62,9 @@ fn lex_multi() -> Result<(), lexer::Error> {
         Token::Ident(Identifier::Normal, "x".to_string()),
         Token::Sym("=".to_string()),
         Token::Brace(BraceType::Paren, BraceSide::Left),
-        Token::Lit(Literal::Float, "3.14".to_string()),
+        Token::Lit(Literal::Float(3.14)),
         Token::Sep(Separator::Comma),
-        Token::Lit(Literal::Float, "0.86".to_string()),
+        Token::Lit(Literal::Float(0.86)),
         Token::Brace(BraceType::Paren, BraceSide::Right),
         Token::EOF,
     ];
@@ -162,8 +162,8 @@ fn lex_proc() -> Result<(), lexer::Error> {
 fn invalid_char_error() {
     let mut iter = TokenStream::new("3.14.", vec![], vec![]);
     match iter.next().unwrap() {
-	    Err(_) => {}
-	    Ok(_) => panic!("Error did not happen")
+        Err(_) => {}
+        Ok(_) => panic!("Error did not happen"),
     }
 }
 
@@ -171,8 +171,8 @@ fn invalid_char_error() {
 fn unknown_char_error() {
     let mut iter = TokenStream::new("$", vec![], vec![]);
     match iter.next().unwrap() {
-	    Err(_) => {}
-	    Ok(_) => panic!("Error did not happen")
+        Err(_) => {}
+        Ok(_) => panic!("Error did not happen"),
     }
 }
 
