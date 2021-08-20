@@ -1,4 +1,10 @@
-use std::{iter::Chain, iter::Peekable, str::Chars};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+    iter::Chain,
+    iter::Peekable,
+    str::Chars,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum Identifier {
@@ -56,12 +62,16 @@ impl Error {
             pos,
         }
     }
-    #[allow(unused)] // my linter does not recognize that this is being used in the other file (presumably) because of #[cfg(test)]
-    pub fn fmt(&self) -> String {
-        format!(
-            "{} at line {}, column {}",
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(
+            f,
+            "{}, at line: {}, column: {}.",
             self.reason, self.pos.ln, self.pos.col
-        )
+        )?;
+        Ok(())
     }
 }
 
@@ -84,14 +94,14 @@ impl Position {
 }
 
 struct Lexer<'a> {
-    reserved: &'a[&'a str],
-    symbols: &'a[&'a str],
+    reserved: &'a [&'a str],
+    symbols: &'a [&'a str],
     iter: Peekable<Chain<Chars<'a>, Chars<'a>>>,
     pos: Position,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(chars: Chars<'a>, reserved: &'a[&'a str], symbols: &'a[&'a str]) -> Self {
+    fn new(chars: Chars<'a>, reserved: &'a [&'a str], symbols: &'a [&'a str]) -> Self {
         Self {
             iter: chars.chain("\n".chars()).peekable(),
             reserved,
@@ -139,7 +149,7 @@ impl<'a> Lexer<'a> {
                     self.next()
                 }
                 _ => Some(Err(Error::new(
-                    format!("Unknown character '{}'", char),
+                    format!("Unknown character: '{}'", char),
                     char,
                     self.pos,
                 ))),
@@ -166,7 +176,10 @@ impl<'a> Lexer<'a> {
                 if char == '.' {
                     if float {
                         return Some(Err(Error::new(
-                            format!("Invalid character '{}'", char),
+                            format!(
+                                "Invalid character '{}': expected whitespace or seperator",
+                                char
+                            ),
                             char,
                             self.pos,
                         )));
@@ -257,7 +270,7 @@ pub struct TokenStream<'a> {
 
 impl<'a> TokenStream<'a> {
     #[allow(unused)] // my linter does not recognize that this is being used in the other file (presumably) because of #[cfg(test)]
-    pub fn new(s: &'a str, reserved: &'a[&'a str], symbols: &'a[&'a str]) -> Self {
+    pub fn new(s: &'a str, reserved: &'a [&'a str], symbols: &'a [&'a str]) -> Self {
         Self {
             lexer: Lexer::new(s.chars(), reserved, symbols),
         }
