@@ -56,7 +56,7 @@ impl Error {
             pos,
         }
     }
-    #[allow(unused)] // my linter does not recognize that this is being used in the other file because of the #[cfg(test)]
+    #[allow(unused)] // my linter does not recognize that this is being used in the other file (presumably) because of #[cfg(test)]
     pub fn fmt(&self) -> String {
         format!(
             "{} at line {}, column {}",
@@ -120,7 +120,7 @@ impl<'a> Lexer<'a> {
             self.next()
         } else if self.symbols.contains(&char.to_string().as_str()) {
             self.symbol(char)
-        } else if char.is_alphabetic() || "#_".contains(char) {
+        } else if char.is_alphabetic() || char == '_' {
             self.ident(char)
         } else if char.is_numeric() {
             self.num(char)
@@ -204,7 +204,7 @@ impl<'a> Lexer<'a> {
         ident.push(char);
         while match self.iter.peek() {
             Some(char) => {
-                if char.is_alphanumeric() || "#_".contains(char.to_string().as_str()) {
+                if char.is_alphanumeric() || *char == '_' {
                     true
                 } else {
                     false
@@ -256,7 +256,7 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    #[allow(unused)] // my linter does not recognize that this is being used in the other file because of the #[cfg(test)]
+    #[allow(unused)] // my linter does not recognize that this is being used in the other file (presumably) because of #[cfg(test)]
     pub fn new(s: &'a str, reserved: &'a[&'a str], symbols: &'a[&'a str]) -> Self {
         Self {
             lexer: Lexer::new(s.chars(), reserved, symbols),

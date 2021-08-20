@@ -179,5 +179,11 @@ fn unknown_char_error() {
         Ok(_) => panic!("Error did not happen"),
     }
 }
-
-// I totally did not use the bottom of this file as a clipboard previously
+#[test]
+fn many_tokens() -> Result<(), lexer::Error> {
+    let iter = TokenStream::new("foo bar baz xyz aaaaaa bbbbb cccc dddd eeee -> ffffff gggggg + jjjjjjjj + hjjjjj ++++++++++ ****************** ===== &:[]", &[], &["-", "->", "+", "++","=", "==", "*", "&", ":"]);
+    for token in iter {
+        token?;
+    }
+    Ok(())
+}
