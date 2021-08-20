@@ -7,7 +7,7 @@ use lexer::*;
 fn comments() -> Result<(), lexer::Error> {
     let mut iter = TokenStream::new("3 # this is a comment", &[], &[], &[], &['#']);
     iter.next().unwrap()?;
-    assert_eq!(iter.next().unwrap()?, Token::EOF);
+    assert_eq!(iter.next().unwrap()?, Token::Comment("# this is a comment".to_string()));
     Ok(())
 }
 

@@ -39,6 +39,7 @@ pub enum Token {
     Ident(Identifier),
     Brace(BraceType),
     Sep(Separator),
+    Comment(String),
 }
 
 #[derive(Debug)]
@@ -128,12 +129,7 @@ impl<'a> Lexer<'a> {
         } else if " \t".contains(char) {
             self.next()
         } else if self.comments.contains(&char) {
-            while let Some(char) = self.iter.next() {
-                if char == '\n' {
-                    break;
-                }
-            }
-            self.lex(char)
+            self.comment(char)
         } else if self.strings.contains(&char) {
             self.str(char)
         } else if self.symbols.contains(&char.to_string().as_str()) {
@@ -265,6 +261,18 @@ impl<'a> Lexer<'a> {
             self.pos.advance();
         }
         Some(Ok(Token::Sym(sym)))
+    }
+
+    fn comment(&mut self, char: char) -> Option<Result<Token, Error>> {
+        let mut comm = String::new();
+        comm.push(char);
+        while let Some(char) = self.iter.next() {
+            if char == '\n' {
+                break;
+            }
+            comm.push(char);
+        }
+        Some(Ok(Token::Comment(comm)))
     }
 }
 
