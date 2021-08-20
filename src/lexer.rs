@@ -85,16 +85,26 @@ impl Position {
 struct Lexer<'a> {
     reserved: &'a [&'a str],
     symbols: &'a [&'a str],
+    strings: &'a [char],
+    comments: &'a [char],
     iter: Peekable<Chain<Chars<'a>, Chars<'a>>>,
     pos: Position,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(chars: Chars<'a>, reserved: &'a [&'a str], symbols: &'a [&'a str]) -> Self {
+    fn new(
+        chars: Chars<'a>,
+        reserved: &'a [&'a str],
+        symbols: &'a [&'a str],
+        strings: &'a [char],
+        comments: &'a [char],
+    ) -> Self {
         Self {
             iter: chars.chain("\n".chars()).peekable(),
             reserved,
             symbols,
+            strings,
+            comments,
             pos: Position {
                 col: 0,
                 ln: 1,
@@ -117,6 +127,15 @@ impl<'a> Lexer<'a> {
             Some(Ok(Token::EOF))
         } else if " \t".contains(char) {
             self.next()
+        } else if self.comments.contains(&char) {
+            while let Some(char) = self.iter.next() {
+                if char == '\n' {
+                    break;
+                }
+            }
+            self.lex(char)
+        } else if self.strings.contains(&char) {
+            self.str(char)
         } else if self.symbols.contains(&char.to_string().as_str()) {
             self.symbol(char)
         } else if char.is_alphabetic() || char == '_' {
@@ -132,7 +151,6 @@ impl<'a> Lexer<'a> {
                 '{' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Left)))),
                 '}' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Right)))),
                 ',' => Some(Ok(Token::Sep(Separator::Comma))),
-                '"' => self.str(char),
                 '\n' => {
                     self.pos.newline();
                     self.next()
@@ -255,10 +273,16 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    #[allow(unused)] // my linter does not recognize that this is being used in the other file (presumably) because of #[cfg(test)]
-    pub fn new(s: &'a str, reserved: &'a [&'a str], symbols: &'a [&'a str]) -> Self {
+    #[allow(unused)]
+    pub fn new(
+        s: &'a str,
+        reserved: &'a [&'a str],
+        symbols: &'a [&'a str],
+        strings: &'a [char],
+        comments: &'a [char],
+    ) -> Self {
         Self {
-            lexer: Lexer::new(s.chars(), reserved, symbols),
+            lexer: Lexer::new(s.chars(), reserved, symbols, strings, comments),
         }
     }
 }
