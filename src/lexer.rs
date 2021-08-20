@@ -282,7 +282,7 @@ impl<'a> TokenStream<'a> {
         comments: &'a [char],
     ) -> Self {
         Self {
-            lexer: Lexer::new(s.chars(), reserved, symbols, strings, comments),
+            lexer: Lexer::new(s.trim().chars(), reserved, symbols, strings, comments),
         }
     }
 }
