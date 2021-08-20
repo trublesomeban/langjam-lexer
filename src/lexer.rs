@@ -1,10 +1,4 @@
-use std::{
-    fmt,
-    fmt::{Display, Formatter},
-    iter::Chain,
-    iter::Peekable,
-    str::Chars,
-};
+use std::{fmt, iter::Chain, iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq)]
 pub enum Identifier {
@@ -47,25 +41,27 @@ pub enum Token {
     Sep(Separator),
 }
 
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)?;
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct Error {
     reason: String,
-    details: char,
     pos: Position,
 }
 
 impl Error {
-    fn new(reason: String, details: char, pos: Position) -> Self {
-        Self {
-            reason,
-            details,
-            pos,
-        }
+    fn new(reason: String, pos: Position) -> Self {
+        Self { reason, pos }
     }
 }
 
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
             f,
             "{}, at line: {}, column: {}.",
@@ -150,7 +146,6 @@ impl<'a> Lexer<'a> {
                 }
                 _ => Some(Err(Error::new(
                     format!("Unknown character: '{}'", char),
-                    char,
                     self.pos,
                 ))),
             }
@@ -180,7 +175,6 @@ impl<'a> Lexer<'a> {
                                 "Invalid character '{}': expected whitespace or seperator",
                                 char
                             ),
-                            char,
                             self.pos,
                         )));
                     }
@@ -257,8 +251,7 @@ impl<'a> Lexer<'a> {
         }
         if multi {
             self.iter.next();
-            self.pos.idx += 1;
-            self.pos.col += 1;
+            self.pos.advance();
         }
         Some(Ok(Token::Sym(sym)))
     }
