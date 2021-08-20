@@ -41,13 +41,6 @@ pub enum Token {
     Sep(Separator),
 }
 
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)?;
-        Ok(())
-    }
-}
-
 #[derive(Debug)]
 pub struct Error {
     reason: String,

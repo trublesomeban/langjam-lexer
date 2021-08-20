@@ -163,7 +163,7 @@ fn invalid_char_error() {
     let mut iter = TokenStream::new("3.14.", &[], &[]);
     match iter.next().unwrap() {
         Err(_e) => {
-                eprintln!("{}", _e);
+            eprintln!("{}", _e);
         }
         Ok(_) => panic!("Error did not happen"),
     }
@@ -174,11 +174,12 @@ fn unknown_char_error() {
     let mut iter = TokenStream::new("$", &[], &[]);
     match iter.next().unwrap() {
         Err(_e) => {
-                eprintln!("{}", _e);
+            eprintln!("{}", _e);
         }
         Ok(_) => panic!("Error did not happen"),
     }
 }
+
 #[test]
 fn many_tokens() -> Result<(), lexer::Error> {
     let iter = TokenStream::new("foo bar baz xyz aaaaaa bbbbb cccc dddd eeee -> ffffff gggggg + jjjjjjjj + hjjjjj ++++++++++ ****************** ===== &:[]", &[], &["-", "->", "+", "++","=", "==", "*", "&", ":"]);
