@@ -1,48 +1,9 @@
+pub mod token;
+
 use std::{fmt, iter::Chain, iter::Peekable, str::Chars};
 
-#[derive(Debug, PartialEq)]
-pub enum Identifier {
-    Reserved(String),
-    Normal(String),
-}
 
-#[derive(Debug, PartialEq)]
-pub enum BraceSide {
-    Left,
-    Right,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum BraceType {
-    Paren(BraceSide),
-    Bracket(BraceSide),
-    Curly(BraceSide),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Separator {
-    Comma,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Literal {
-    Int(String),
-    Float(String),
-    Str(String),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    EOF,
-    Sym(String),
-    Lit(Literal),
-    Ident(Identifier),
-    Brace(BraceType),
-    Sep(Separator),
-    Comment(String),
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Error {
     reason: String,
     pos: Position,
@@ -114,7 +75,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn next(&mut self) -> Option<Result<Token, Error>> {
+    fn next(&mut self) -> Option<Result<token::Token, Error>> {
         if let Some(char) = self.iter.next() {
             self.pos.advance();
             self.lex(char)
@@ -123,9 +84,9 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn lex(&mut self, char: char) -> Option<Result<token::Token, Error>> {
         if self.iter.peek().is_none() {
-            Some(Ok(Token::EOF))
+            Some(Ok(token::Token::EOF))
         } else if " \t".contains(char) {
             self.next()
         } else if self.comments.contains(&char) {
@@ -140,13 +101,13 @@ impl<'a> Lexer<'a> {
             self.num(char)
         } else {
             match char {
-                '(' => Some(Ok(Token::Brace(BraceType::Paren(BraceSide::Left)))),
-                ')' => Some(Ok(Token::Brace(BraceType::Paren(BraceSide::Right)))),
-                '[' => Some(Ok(Token::Brace(BraceType::Bracket(BraceSide::Left)))),
-                ']' => Some(Ok(Token::Brace(BraceType::Bracket(BraceSide::Right)))),
-                '{' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Left)))),
-                '}' => Some(Ok(Token::Brace(BraceType::Curly(BraceSide::Right)))),
-                ',' => Some(Ok(Token::Sep(Separator::Comma))),
+                '(' => Some(Ok(token::Token::Brace(token::BraceType::Paren(token::BraceSide::Left)))),
+                ')' => Some(Ok(token::Token::Brace(token::BraceType::Paren(token::BraceSide::Right)))),
+                '[' => Some(Ok(token::Token::Brace(token::BraceType::Bracket(token::BraceSide::Left)))),
+                ']' => Some(Ok(token::Token::Brace(token::BraceType::Bracket(token::BraceSide::Right)))),
+                '{' => Some(Ok(token::Token::Brace(token::BraceType::Curly(token::BraceSide::Left)))),
+                '}' => Some(Ok(token::Token::Brace(token::BraceType::Curly(token::BraceSide::Right)))),
+                ',' => Some(Ok(token::Token::Sep(token::Separator::Comma))),
                 '\n' => {
                     self.pos.newline();
                     self.next()
@@ -159,7 +120,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn num(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn num(&mut self, char: char) -> Option<Result<token::Token, Error>> {
         let mut num = String::new();
         let mut float = false;
         num.push(char);
@@ -193,14 +154,14 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Some(Ok(Token::Lit(if float {
-            Literal::Float(num)
+        Some(Ok(token::Token::Lit(if float {
+            token::Literal::Float(num)
         } else {
-            Literal::Int(num)
+            token::Literal::Int(num)
         })))
     }
 
-    fn str(&mut self, _: char) -> Option<Result<Token, Error>> {
+    fn str(&mut self, _: char) -> Option<Result<token::Token, Error>> {
         let mut str = String::new();
         while let Some(char) = self.iter.next() {
             self.pos.idx += 1;
@@ -210,10 +171,10 @@ impl<'a> Lexer<'a> {
             }
             str.push(char)
         }
-        Some(Ok(Token::Lit(Literal::Str(str))))
+        Some(Ok(token::Token::Lit(token::Literal::Str(str))))
     }
 
-    fn ident(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn ident(&mut self, char: char) -> Option<Result<token::Token, Error>> {
         let mut ident = String::new();
         ident.push(char);
         while match self.iter.peek() {
@@ -232,16 +193,16 @@ impl<'a> Lexer<'a> {
                 ident.push(char)
             }
         }
-        Some(Ok(Token::Ident(
+        Some(Ok(token::Token::Ident(
             if self.reserved.contains(&ident.as_str()) {
-                Identifier::Reserved(ident)
+                token::Identifier::Reserved(ident)
             } else {
-                Identifier::Normal(ident)
+                token::Identifier::Normal(ident)
             },
         )))
     }
 
-    fn symbol(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn symbol(&mut self, char: char) -> Option<Result<token::Token, Error>> {
         let mut sym = String::new();
         let mut multi = false;
         sym.push(char);
@@ -260,10 +221,10 @@ impl<'a> Lexer<'a> {
             self.iter.next();
             self.pos.advance();
         }
-        Some(Ok(Token::Sym(sym)))
+        Some(Ok(token::Token::Sym(sym)))
     }
 
-    fn comment(&mut self, char: char) -> Option<Result<Token, Error>> {
+    fn comment(&mut self, char: char) -> Option<Result<token::Token, Error>> {
         let mut comm = String::new();
         comm.push(char);
         while let Some(char) = self.iter.next() {
@@ -272,7 +233,7 @@ impl<'a> Lexer<'a> {
             }
             comm.push(char);
         }
-        Some(Ok(Token::Comment(comm)))
+        Some(Ok(token::Token::Comment(comm)))
     }
 }
 
@@ -296,7 +257,7 @@ impl<'a> TokenStream<'a> {
 }
 
 impl<'a> Iterator for TokenStream<'a> {
-    type Item = Result<Token, Error>;
+    type Item = Result<token::Token, Error>;
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next()
     }
